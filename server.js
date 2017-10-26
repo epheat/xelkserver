@@ -3,6 +3,7 @@
 
 var http = require("http");
 var url = require("url");
+var fs = require("fs");
 
 const STARTPORT = 2000;
 const ENDPORT = 30000;
@@ -14,8 +15,6 @@ var server = http.createServer(function(request, response) {
 
   // serve the requested url
   serveURL(request.url, request, response);
-
-
 
 
 });
@@ -32,28 +31,75 @@ server.listen(port, function(err) {
 function serveURL(url, request, response) {
   console.log("attempting to serve the file at url " + url);
 
-  // check if this file is an mp3 or jpg
-  var fileType = "jpg";
-  // then check whether or not it exists
-  var fileExists = true;
+  // 33% chance to give advertisement
+  if (getRandomInt(0, 2) == 0) {
+    giveAdvert(request, response);
+  } else {
 
-  if (fileExists) {
-    response.statusCode = 200;
-    if (fileType == "jpg") {
+    // check if this file is an mp3 or jpg
+    var type = fileType(url);
+
+    var filename = "." + url;
+
+    if (type == "jpg") {
       response.setHeader('Content-Type', 'image/jpeg');
-      response.end(); // TODO
-    } else if (fileType == "mp3") {
+      fs.readFile(filename, function(err, data) {
+        if (err) {
+          error404(response);
+        } else {
+          response.write(data);
+          response.end();
+        }
+      });
+    } else if (type == "mp3") {
       response.setHeader('Content-Type', 'audio/mpeg3');
-      response.end(); // TODO
+      fs.readFile(filename, function(err, data) {
+        if (err) {
+          error404(response);
+        } else {
+          response.write(data);
+          response.end();
+        }
+      });
     } else {
       response.setHeader('Content-Type', 'text/plain');
       response.end('Invalid file type.');
     }
-
-  } else {
-    response.statusCode = 403;
-    response.setHeader('Content-Type', 'text/plain');
-    response.end('That file does not exist!');
   }
+}
 
+function giveAdvert(request, response) {
+  response.statusCode = 200;
+  response.setHeader('Content-Type', 'image/jpeg');
+  fs.readFile("./advert.jpg", function(err, data) {
+    if (err) {
+      console.log("advert image missing.");
+      error404(response);
+    } else {
+      response.write(data);
+      response.end();
+    }
+  })
+}
+
+function fileType(url) {
+  var jpgReg = /[a-zA-Z0-9_]+.jpg$/;
+  var mp3Reg = /[a-zA-Z0-9_]+.mp3$/;
+
+  if (url.match(jpgReg)) {
+    return "jpg";
+  } else if (url.match(mp3Reg)) {
+    return "mp3";
+  } else {
+    return "other";
+  }
+}
+
+function error404(response) {
+  response.setHeader('Content-Type', 'text/plain');
+  response.end('File not found.');
+}
+
+function getRandomInt(low, high) {
+  return Math.floor(Math.random() * (high - low + 1) + low);
 }

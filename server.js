@@ -10,6 +10,21 @@ const ENDPORT = 30000;
 
 const hostname = 'iris.cs.uky.edu'; // TODO: do we need this?
 const port = 2000; // TODO: randomly select the port or whatever
+function randPort(){
+  //TODO: randomize port numbers, listen, call recursively
+   var portNum = getRandomInt(2000, 30000);
+   servListen(portNum);
+}
+
+function servListen(port){
+  server.listen(port, function(err) {
+    if (err) {
+      servListen(port);
+    } else {
+    	console.log('Server running on port ' + port);
+    }
+  });
+}
 
 var server = http.createServer(function(request, response) {
 
@@ -102,4 +117,36 @@ function error404(response) {
 
 function getRandomInt(low, high) {
   return Math.floor(Math.random() * (high - low + 1) + low);
+}
+
+function giveFile(url, request, response){
+  var reqFile = fileType(url);
+  var filename = "." + url;
+  if (reqFile == "mp3"){
+    response.setHeader('Content-Type', 'audio/mpeg3');
+    fs.readFile(filename, function(err, data) {
+      if (err) {
+        error404(response);
+      } else {
+        response.write(data);
+        response.end();
+        }
+
+      });
+  }
+  else if (reqFile == "jpeg"){
+    response.setHeader('Content-Type', 'image/jpeg');
+    fs.readFile(filename, function(err, data) {
+      if (err) {
+        error404(response);
+      } else {
+        response.write(data);
+        response.end();
+      }
+    });
+  }
+  else{
+    response.setHeader('Content-Type', 'text/plain');
+    response.end('Invalid file type.');
+  }
 }
